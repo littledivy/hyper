@@ -385,26 +385,26 @@ where
             return Poll::Ready(Err(crate::Error::new_unexpected_message()));
         }
 
-        let num_read = ready!(self.force_io_read(cx)).map_err(crate::Error::new_io)?;
+        // let num_read = ready!(self.force_io_read(cx)).map_err(crate::Error::new_io)?;
 
-        if num_read == 0 {
-            let ret = if self.should_error_on_eof() {
-                trace!("found unexpected EOF on busy connection: {:?}", self.state);
-                Poll::Ready(Err(crate::Error::new_incomplete()))
-            } else {
-                trace!("found EOF on idle connection, closing");
-                Poll::Ready(Ok(()))
-            };
+        // if num_read == 0 {
+        //     let ret = if self.should_error_on_eof() {
+        //         trace!("found unexpected EOF on busy connection: {:?}", self.state);
+        //         Poll::Ready(Err(crate::Error::new_incomplete()))
+        //     } else {
+        //         trace!("found EOF on idle connection, closing");
+        //         Poll::Ready(Ok(()))
+        //     };
 
-            // order is important: should_error needs state BEFORE close_read
-            self.state.close_read();
-            return ret;
-        }
+        //     // order is important: should_error needs state BEFORE close_read
+        //     self.state.close_read();
+        //     return ret;
+        // }
 
-        debug!(
-            "received unexpected {} bytes on an idle connection",
-            num_read
-        );
+        // debug!(
+        //     "received unexpected {} bytes on an idle connection",
+        //     num_read
+        // );
         Poll::Ready(Err(crate::Error::new_unexpected_message()))
     }
 
@@ -416,15 +416,15 @@ where
             return Poll::Pending;
         }
 
-        let num_read = ready!(self.force_io_read(cx)).map_err(crate::Error::new_io)?;
+        // let num_read = ready!(self.force_io_read(cx)).map_err(crate::Error::new_io)?;
 
-        if num_read == 0 {
-            trace!("found unexpected EOF on busy connection: {:?}", self.state);
-            self.state.close_read();
-            Poll::Ready(Err(crate::Error::new_incomplete()))
-        } else {
+        // if num_read == 0 {
+        //     trace!("found unexpected EOF on busy connection: {:?}", self.state);
+        //     self.state.close_read();
+        //     Poll::Ready(Err(crate::Error::new_incomplete()))
+        // } else {
             Poll::Ready(Ok(()))
-        }
+        // }
     }
 
     fn force_io_read(&mut self, cx: &mut task::Context<'_>) -> Poll<io::Result<usize>> {
@@ -457,30 +457,30 @@ where
         }
 
         if !self.io.is_read_blocked() {
-            if self.io.read_buf().is_empty() {
-                match self.io.poll_read_from_io(cx) {
-                    Poll::Ready(Ok(n)) => {
-                        if n == 0 {
-                            trace!("maybe_notify; read eof");
-                            if self.state.is_idle() {
-                                self.state.close();
-                            } else {
-                                self.close_read()
-                            }
-                            return;
-                        }
-                    }
-                    Poll::Pending => {
-                        trace!("maybe_notify; read_from_io blocked");
-                        return;
-                    }
-                    Poll::Ready(Err(e)) => {
-                        trace!("maybe_notify; read_from_io error: {}", e);
-                        self.state.close();
-                        self.state.error = Some(crate::Error::new_io(e));
-                    }
-                }
-            }
+            // if self.io.read_buf().is_empty() {
+            //     match self.io.poll_read_from_io(cx) {
+            //         Poll::Ready(Ok(n)) => {
+            //             if n == 0 {
+            //                 trace!("maybe_notify; read eof");
+            //                 if self.state.is_idle() {
+            //                     self.state.close();
+            //                 } else {
+            //                     self.close_read()
+            //                 }
+            //                 return;
+            //             }
+            //         }
+            //         Poll::Pending => {
+            //             trace!("maybe_notify; read_from_io blocked");
+            //             return;
+            //         }
+            //         Poll::Ready(Err(e)) => {
+            //             trace!("maybe_notify; read_from_io error: {}", e);
+            //             self.state.close();
+            //             self.state.error = Some(crate::Error::new_io(e));
+            //         }
+            //     }
+            // }
             self.state.notify_read = true;
         }
     }

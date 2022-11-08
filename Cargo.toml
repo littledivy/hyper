@@ -33,8 +33,9 @@ h2 = { version = "0.3.9", optional = true }
 itoa = "1"
 tracing = { version = "0.1", default-features = false, features = ["std"] }
 pin-project-lite = "0.2.4"
-tokio = { version = "1", features = ["sync"] }
+tokio = {  path = "../tokio/tokio", features = ["sync"] }
 want = "0.3"
+futures = "0.3"
 
 # Optional
 
@@ -50,7 +51,7 @@ pretty_env_logger = "0.4"
 spmc = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1", features = [
+tokio = { path = "../tokio/tokio", features = [
     "fs",
     "macros",
     "net",
@@ -62,8 +63,8 @@ tokio = { version = "1", features = [
     "time",
     "test-util",
 ] }
-tokio-test = "0.4"
-tokio-util = { version = "0.7", features = ["codec"] }
+# tokio-test = "0.4"
+# tokio-util = { version = "0.7", features = ["codec"] }
 url = "2.2"
 
 [target.'cfg(any(target_os = "linux", target_os = "macos"))'.dev-dependencies]
@@ -104,8 +105,11 @@ rustdoc-args = ["--cfg", "docsrs", "--cfg", "hyper_unstable_ffi"]
 features = ["full"]
 
 [profile.release]
-codegen-units = 1
+codegen-units = 1 # this helps
 incremental = false
+lto = true # this helps
+opt-level = 3
+panic = "abort" # this helps
 
 [profile.bench]
 codegen-units = 1
@@ -134,7 +138,7 @@ required-features = ["full"]
 [[example]]
 name = "hello"
 path = "examples/hello.rs"
-required-features = ["full"]
+required-features = ["server", "http1"]
 
 [[example]]
 name = "http_proxy"

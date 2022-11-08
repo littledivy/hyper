@@ -157,8 +157,10 @@ impl Http1Transaction for Server {
                         return Err(Parse::UriTooLong);
                     }
                     subject = RequestLine(
-                        Method::from_bytes(req.method.unwrap().as_bytes())?,
-                        uri.parse()?,
+                        // Method::from_bytes(req.method.unwrap().as_bytes())?,
+                        Method::GET,
+                        // uri.parse()?,
+                        http::Uri::default(),
                     );
                     version = if req.version.unwrap() == 1 {
                         keep_alive = true;
@@ -170,7 +172,7 @@ impl Http1Transaction for Server {
                         Version::HTTP_10
                     };
 
-                    record_header_indices(bytes, &req.headers, &mut headers_indices)?;
+                    // record_header_indices(bytes, &req.headers, &mut headers_indices)?;
                     headers_len = req.headers.len();
                 }
                 Ok(httparse::Status::Partial) => return Ok(None),
@@ -191,7 +193,7 @@ impl Http1Transaction for Server {
             }
         };
 
-        let slice = buf.split_to(len).freeze();
+        let slice = buf.split_to(len);
 
         // According to https://tools.ietf.org/html/rfc7230#section-3.3.3
         // 1. (irrelevant to Request)
@@ -204,7 +206,7 @@ impl Http1Transaction for Server {
 
         let mut decoder = DecodedLength::ZERO;
         let mut expect_continue = false;
-        let mut con_len = None;
+        // let mut con_len = None;
         let mut is_te = false;
         let mut is_te_chunked = false;
         let mut wants_upgrade = subject.0 == Method::CONNECT;
@@ -224,87 +226,87 @@ impl Http1Transaction for Server {
 
         let mut headers = ctx.cached_headers.take().unwrap_or_else(HeaderMap::new);
 
-        headers.reserve(headers_len);
+        // headers.reserve(headers_len);
 
-        for header in &headers_indices[..headers_len] {
-            // SAFETY: array is valid up to `headers_len`
-            let header = unsafe { &*header.as_ptr() };
-            let name = header_name!(&slice[header.name.0..header.name.1]);
-            let value = header_value!(slice.slice(header.value.0..header.value.1));
+        // for header in &headers_indices[..headers_len] {
+        //     // SAFETY: array is valid up to `headers_len`
+        //     let header = unsafe { &*header.as_ptr() };
+        //     let name = header_name!(&slice[header.name.0..header.name.1]);
+        //     let value = header_value!(slice.slice(header.value.0..header.value.1));
 
-            match name {
-                header::TRANSFER_ENCODING => {
-                    // https://tools.ietf.org/html/rfc7230#section-3.3.3
-                    // If Transfer-Encoding header is present, and 'chunked' is
-                    // not the final encoding, and this is a Request, then it is
-                    // malformed. A server should respond with 400 Bad Request.
-                    if !is_http_11 {
-                        debug!("HTTP/1.0 cannot have Transfer-Encoding header");
-                        return Err(Parse::transfer_encoding_unexpected());
-                    }
-                    is_te = true;
-                    if headers::is_chunked_(&value) {
-                        is_te_chunked = true;
-                        decoder = DecodedLength::CHUNKED;
-                    } else {
-                        is_te_chunked = false;
-                    }
-                }
-                header::CONTENT_LENGTH => {
-                    if is_te {
-                        continue;
-                    }
-                    let len = headers::content_length_parse(&value)
-                        .ok_or_else(Parse::content_length_invalid)?;
-                    if let Some(prev) = con_len {
-                        if prev != len {
-                            debug!(
-                                "multiple Content-Length headers with different values: [{}, {}]",
-                                prev, len,
-                            );
-                            return Err(Parse::content_length_invalid());
-                        }
-                        // we don't need to append this secondary length
-                        continue;
-                    }
-                    decoder = DecodedLength::checked_new(len)?;
-                    con_len = Some(len);
-                }
-                header::CONNECTION => {
-                    // keep_alive was previously set to default for Version
-                    if keep_alive {
-                        // HTTP/1.1
-                        keep_alive = !headers::connection_close(&value);
-                    } else {
-                        // HTTP/1.0
-                        keep_alive = headers::connection_keep_alive(&value);
-                    }
-                }
-                header::EXPECT => {
-                    // According to https://datatracker.ietf.org/doc/html/rfc2616#section-14.20
-                    // Comparison of expectation values is case-insensitive for unquoted tokens
-                    // (including the 100-continue token)
-                    expect_continue = value.as_bytes().eq_ignore_ascii_case(b"100-continue");
-                }
-                header::UPGRADE => {
-                    // Upgrades are only allowed with HTTP/1.1
-                    wants_upgrade = is_http_11;
-                }
+        //     match name {
+        //         header::TRANSFER_ENCODING => {
+        //             // https://tools.ietf.org/html/rfc7230#section-3.3.3
+        //             // If Transfer-Encoding header is present, and 'chunked' is
+        //             // not the final encoding, and this is a Request, then it is
+        //             // malformed. A server should respond with 400 Bad Request.
+        //             if !is_http_11 {
+        //                 debug!("HTTP/1.0 cannot have Transfer-Encoding header");
+        //                 return Err(Parse::transfer_encoding_unexpected());
+        //             }
+        //             is_te = true;
+        //             if headers::is_chunked_(&value) {
+        //                 is_te_chunked = true;
+        //                 decoder = DecodedLength::CHUNKED;
+        //             } else {
+        //                 is_te_chunked = false;
+        //             }
+        //         }
+        //         header::CONTENT_LENGTH => {
+        //             if is_te {
+        //                 continue;
+        //             }
+        //             let len = headers::content_length_parse(&value)
+        //                 .ok_or_else(Parse::content_length_invalid)?;
+        //             if let Some(prev) = con_len {
+        //                 if prev != len {
+        //                     debug!(
+        //                         "multiple Content-Length headers with different values: [{}, {}]",
+        //                         prev, len,
+        //                     );
+        //                     return Err(Parse::content_length_invalid());
+        //                 }
+        //                 // we don't need to append this secondary length
+        //                 continue;
+        //             }
+        //             decoder = DecodedLength::checked_new(len)?;
+        //             con_len = Some(len);
+        //         }
+        //         header::CONNECTION => {
+        //             // keep_alive was previously set to default for Version
+        //             if keep_alive {
+        //                 // HTTP/1.1
+        //                 keep_alive = !headers::connection_close(&value);
+        //             } else {
+        //                 // HTTP/1.0
+        //                 keep_alive = headers::connection_keep_alive(&value);
+        //             }
+        //         }
+        //         header::EXPECT => {
+        //             // According to https://datatracker.ietf.org/doc/html/rfc2616#section-14.20
+        //             // Comparison of expectation values is case-insensitive for unquoted tokens
+        //             // (including the 100-continue token)
+        //             expect_continue = value.as_bytes().eq_ignore_ascii_case(b"100-continue");
+        //         }
+        //         header::UPGRADE => {
+        //             // Upgrades are only allowed with HTTP/1.1
+        //             wants_upgrade = is_http_11;
+        //         }
 
-                _ => (),
-            }
+        //         _ => (),
+        //     }
 
-            if let Some(ref mut header_case_map) = header_case_map {
-                header_case_map.append(&name, slice.slice(header.name.0..header.name.1));
-            }
+        //     if let Some(ref mut header_case_map) = header_case_map {
+        //         header_case_map.append(&name, slice.slice(header.name.0..header.name.1));
+        //     }
 
-            #[cfg(feature = "ffi")]
-            if let Some(ref mut header_order) = header_order {
-                header_order.append(&name);
-            }
+        //     #[cfg(feature = "ffi")]
+        //     if let Some(ref mut header_order) = header_order {
+        //         header_order.append(&name);
+        //     }
 
-            headers.append(name, value);
-        }
+        //     // headers.append(name, value);
+        // }
 
         if is_te && !is_te_chunked {
             debug!("request with transfer-encoding header, but not chunked, bad request");
@@ -374,7 +376,7 @@ impl Http1Transaction for Server {
         // the half-pushed message, so rewind to before.
         let orig_len = dst.len();
 
-        let init_cap = 30 + msg.head.headers.len() * AVERAGE_HEADER_SIZE;
+        let init_cap = 50; // 30 + msg.head.headers.len() * AVERAGE_HEADER_SIZE;
         dst.reserve(init_cap);
 
         let custom_reason_phrase = msg.head.extensions.get::<crate::ext::ReasonPhrase>();
@@ -893,14 +895,14 @@ impl Server {
         }
 
         // cached date is much faster than formatting every request
-        if !wrote_date {
-            dst.reserve(date::DATE_VALUE_LENGTH + 8);
-            header_name_writer.write_header_name_with_colon(dst, "date: ", header::DATE);
-            date::extend(dst);
-            extend(dst, b"\r\n\r\n");
-        } else {
+        // if !wrote_date {
+        //     dst.reserve(date::DATE_VALUE_LENGTH + 8);
+        //     header_name_writer.write_header_name_with_colon(dst, "date: ", header::DATE);
+        //     date::extend(dst);
+        //     extend(dst, b"\r\n\r\n");
+        // } else {
             extend(dst, b"\r\n");
-        }
+        // }
 
         Ok(encoder.set_last(is_last))
     }

@@ -30,7 +30,12 @@ impl<T: Buf> BufList<T> {
 impl<T: Buf> Buf for BufList<T> {
     #[inline]
     fn remaining(&self) -> usize {
-        self.bufs.iter().map(|buf| buf.remaining()).sum()
+        if self.bufs.is_empty() {
+            return 0;
+        }
+
+        self.bufs[0].remaining()
+        // self.bufs.iter().map(|buf| buf.remaining()).sum()
     }
 
     #[inline]

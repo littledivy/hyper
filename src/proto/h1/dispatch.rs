@@ -130,7 +130,7 @@ where
         cx: &mut task::Context<'_>,
         should_shutdown: bool,
     ) -> Poll<crate::Result<Dispatched>> {
-        T::update_date();
+        // T::update_date();
 
         ready!(self.poll_loop(cx))?;
 
@@ -154,7 +154,7 @@ where
         //
         // 16 was chosen arbitrarily, as that is number of pipelined requests
         // benchmarks often use. Perhaps it should be a config option instead.
-        for _ in 0..16 {
+        for i in 0..16 {
             let _ = self.poll_read(cx)?;
             let _ = self.poll_write(cx)?;
             let _ = self.poll_flush(cx)?;
@@ -175,7 +175,8 @@ where
 
         trace!("poll_loop yielding (self = {:p})", self);
 
-        task::yield_now(cx).map(|never| match never {})
+//        task::yield_now(cx).map(|never| match never {})
+         Poll::Pending
     }
 
     fn poll_read(&mut self, cx: &mut task::Context<'_>) -> Poll<crate::Result<()>> {
@@ -227,7 +228,8 @@ where
                     // just drop, the body will close automatically
                 }
             } else {
-                return self.conn.poll_read_keep_alive(cx);
+                // return self.conn.poll_read_keep_alive(cx);
+                return Poll::Ready(Ok(()));
             }
         }
     }

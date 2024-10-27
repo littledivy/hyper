@@ -1,6 +1,6 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1656510252172,
-  "repoUrl": "https://github.com/hyperium/hyper",
+  "lastUpdate": 1730005326218,
+  "repoUrl": "https://github.com/littledivy/hyper",
   "entries": {
     "connect": [
       {
@@ -12451,6 +12451,36 @@ window.BENCHMARK_DATA = {
             "name": "hello_world_16",
             "value": 48515,
             "range": "± 3576",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "ionut.slaveanu@adswizz.com",
+            "name": "Slaveanu Ionut",
+            "username": "ionut-slaveanu"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "13b0594348916b901ad7e1c838b9d90298db6af4",
+          "message": "fix(http2): improve graceful shutdown during handshake (#3729)\n\nBefore, if a graceful shutdown was triggered while the handshake was in-progress, the connection would just be dropped instantly. However, if some requests were in-flight as part of the handshake, they'd get dropped along with it.\r\n\r\nNow, if handshake is in-progress, we record that a close is desired, and as soon as the handshake has completed, the real graceful shutdown process starts, which should send the proper signals back about what happened with the in-flight requests.",
+          "timestamp": "2024-10-25T11:38:17-04:00",
+          "tree_id": "6508e646158b7a0c123b5353b099d7fbdda5ad27",
+          "url": "https://github.com/littledivy/hyper/commit/13b0594348916b901ad7e1c838b9d90298db6af4"
+        },
+        "date": 1730005324734,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "hello_world_16",
+            "value": 46281,
+            "range": "± 9337.52",
             "unit": "ns/iter"
           }
         ]
